@@ -2,6 +2,7 @@ import pygame
 import random
 import numpy as np
 import signal
+import pyttsx3
 
 # Initialize Pygame
 pygame.init()
@@ -13,6 +14,9 @@ dot_duration = 0.1
 current_wpm = 7  
 
 # Global flag to toggle the display of Morse code
+show_morse = True
+
+voice_enabled = False
 show_morse = True
 
 morse_code = {
@@ -32,6 +36,19 @@ week_letters = {
     5: 'YZQ1234567890',
     6: '. , ? /'
 }
+
+def speak_text(engine, text):
+    try:
+        engine.say(text.lower())
+        engine.runAndWait()
+        engine.stop()
+    except Exception as e:
+        print(f"Error speaking text: {e}")
+    finally:
+        try:
+            engine.stop()
+        except:
+            pass
 
 # Function to generate tone for given frequency and duration
 def generate_tone(frequency, duration, sample_rate=44100):
@@ -65,6 +82,7 @@ def print_yellow(text):
 # Function to practice random letters from a specific week
 def practice_week_letters_continuously(week_num):
     letters = week_letters[week_num]
+    engine = pyttsx3.init()
     while True:
         letter = random.choice(letters)
         if letter == ' ':
@@ -78,8 +96,13 @@ def practice_week_letters_continuously(week_num):
             pygame.time.delay(int(dot_duration * 1000))  
         pygame.time.delay(int(dot_duration * 3 * 1000))  
 
+        if voice_enabled:
+            speak_text(engine,letter)
+    engine.stop()
+
 # Function to practice all characters continuously
 def practice_all_characters_continuously():
+    engine = pyttsx3.init()
     while True:
         letter = random.choice(list(morse_code.keys()))
         if show_morse:
@@ -90,6 +113,10 @@ def practice_all_characters_continuously():
             play_morse_sound(symbol, current_frequency)
             pygame.time.delay(int(dot_duration * 1000))
         pygame.time.delay(int(dot_duration * 3 * 1000))  
+
+        if voice_enabled:
+            speak_text(engine,letter)
+    engine.stop()
 
 # Function to play user text in morse
 def play_user_text_in_morse(user_text):
@@ -131,7 +158,7 @@ def adjust_frequency():
 
 # Main menu function
 def show_menu():
-    global transmitting_event, current_wpm, dot_duration, current_frequency, show_morse
+    global transmitting_event, current_wpm, dot_duration, current_frequency, show_morse, voice_enabled
     while True:
         print(f"\nCurrent Frequency: {current_frequency} Hz | Current WPM: {current_wpm}")
         print_blue("\nThis is a Morse Code program by Glenn Maclean WA7SPY.\n")
@@ -163,9 +190,10 @@ def show_menu():
         print_blue("9. Adjust Tone Frequency 400hz to 1000hz")
         print_blue("10. Set Words Per Minute (5 to 40 wpm)")
         print_blue("11. Toggle Display of Morse Code (dots and dashes)")
-        print_blue("12. Exit")
+        print_blue("12. Toggle Voice")
+        print_blue("13. Exit")
         print(f"Dot Dash Display is {'ON' if show_morse else 'OFF'}")
-        choice = input("Enter choice (1-12): ")
+        choice = input("Enter choice (1-13): ")
 
         if choice == '1':
             practice_week_letters_continuously(1)
@@ -197,6 +225,12 @@ def show_menu():
             else:
                 print("Morse code display (dots and dashes) is now OFF.")
         elif choice == '12':
+            voice_enabled = not voice_enabled
+            if voice_enabled:
+                print("Voice is now ON.")
+            else:
+                print("Voice is now OFF.")
+        elif choice == '13':
             graceful_exit(None, None)  
         else:
             print("Invalid choice. Please select a valid option.")
@@ -204,7 +238,12 @@ def show_menu():
 # Graceful exit function for handling Ctrl+C
 def graceful_exit(signal, frame):
     print("\nProgram interrupted. Exiting...")
-    transmitting_event.clear()  
+    transmitting_event.clear()
+    if tts_engine is not None:
+        try:
+            tts_engine.stop()
+        except:
+            pass
     pygame.quit()
     exit(0)
 
