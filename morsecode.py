@@ -37,10 +37,6 @@ week_letters = {
     6: '. , ? /'
 }
 
-<<<<<<< HEAD
-=======
-# Global flag to toggle the display of Morse code
-
 def speak_text(engine, text):
     try:
         engine.say(text.lower())
@@ -54,7 +50,6 @@ def speak_text(engine, text):
         except:
             pass
 
->>>>>>> 6869bd6 (Add Voice)
 # Function to generate tone for given frequency and duration
 def generate_tone(frequency, duration, sample_rate=44100):
     num_samples = int(duration * sample_rate)
