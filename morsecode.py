@@ -1,8 +1,6 @@
 import pygame
 import random
-import time
 import numpy as np
-import threading
 import signal
 
 # Initialize Pygame
@@ -13,7 +11,9 @@ current_frequency = 700
 sample_rate = 44100  
 dot_duration = 0.1  
 current_wpm = 7  
-transmitting_event = threading.Event()
+
+# Global flag to toggle the display of Morse code
+show_morse = True
 
 morse_code = {
     'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.', 'F': '..-.', 'G': '--.', 'H': '....',
@@ -32,9 +32,6 @@ week_letters = {
     5: 'YZQ1234567890',
     6: '. , ? /'
 }
-
-# Global flag to toggle the display of Morse code
-show_morse = True
 
 # Function to generate tone for given frequency and duration
 def generate_tone(frequency, duration, sample_rate=44100):
@@ -68,7 +65,7 @@ def print_yellow(text):
 # Function to practice random letters from a specific week
 def practice_week_letters_continuously(week_num):
     letters = week_letters[week_num]
-    while transmitting_event.is_set():
+    while True:
         letter = random.choice(letters)
         if letter == ' ':
             continue
@@ -83,7 +80,7 @@ def practice_week_letters_continuously(week_num):
 
 # Function to practice all characters continuously
 def practice_all_characters_continuously():
-    while transmitting_event.is_set():
+    while True:
         letter = random.choice(list(morse_code.keys()))
         if show_morse:
             print_yellow(f"Sending: {letter} ({morse_code[letter]})")
@@ -91,7 +88,7 @@ def practice_all_characters_continuously():
             print_yellow(f"Sending: {letter}")
         for symbol in morse_code[letter]:
             play_morse_sound(symbol, current_frequency)
-            pygame.time.delay(int(dot_duration * 1000))  
+            pygame.time.delay(int(dot_duration * 1000))
         pygame.time.delay(int(dot_duration * 3 * 1000))  
 
 # Function to play user text in morse
@@ -171,26 +168,19 @@ def show_menu():
         choice = input("Enter choice (1-12): ")
 
         if choice == '1':
-            transmitting_event.set()  
-            threading.Thread(target=practice_week_letters_continuously, args=(1,), daemon=True).start()
+            practice_week_letters_continuously(1)
         elif choice == '2':
-            transmitting_event.set()
-            threading.Thread(target=practice_week_letters_continuously, args=(2,), daemon=True).start()
+            practice_week_letters_continuously(2)
         elif choice == '3':
-            transmitting_event.set()
-            threading.Thread(target=practice_week_letters_continuously, args=(3,), daemon=True).start()
+            practice_week_letters_continuously(3)
         elif choice == '4':
-            transmitting_event.set()
-            threading.Thread(target=practice_week_letters_continuously, args=(4,), daemon=True).start()
+            practice_week_letters_continuously(4)
         elif choice == '5':
-            transmitting_event.set()
-            threading.Thread(target=practice_week_letters_continuously, args=(5,), daemon=True).start()
+            practice_week_letters_continuously(5)
         elif choice == '6':
-            transmitting_event.set()
-            threading.Thread(target=practice_week_letters_continuously, args=(6,), daemon=True).start()
+            practice_week_letters_continuously(6)
         elif choice == '7':
-            transmitting_event.set()
-            threading.Thread(target=practice_all_characters_continuously, daemon=True).start()
+            practice_all_characters_continuously()
         elif choice == '8':
             user_text = input("Enter your text to be played in Morse code: ")
             play_user_text_in_morse(user_text)  
