@@ -1,24 +1,50 @@
-import pygame
+# Morse Code Trainer - Cross-Platform Version
+# Author: Glenn Maclean WA7SPY
+
+# === Import and Check Dependencies ===
+try:
+    import pygame
+except ImportError:
+    print("Error: Pygame is not installed. Run: pip install pygame")
+    exit(1)
+
+try:
+    import numpy as np
+except ImportError:
+    print("Error: NumPy is not installed. Run: pip install numpy")
+    exit(1)
+
+try:
+    import pyttsx3
+except ImportError:
+    print("Error: pyttsx3 is not installed. Run: pip install pyttsx3")
+    exit(1)
+
 import random
-import numpy as np
 import signal
-import pyttsx3
+import platform
+import shutil
+import subprocess
+import os
+import time
 
-# Initialize Pygame
+# === Initialize Pygame Mixer ===
 pygame.init()
+try:
+    pygame.mixer.init(frequency=44100, size=-16, channels=2)
+except pygame.error as e:
+    print(f"[ERROR] Pygame mixer failed: {e}")
+    exit(1)
 
-# Variables for tone, Morse code, etc.
+# === Morse Settings ===
 current_frequency = 700
-sample_rate = 44100  
-dot_duration = 0.1  
-current_wpm = 7  
-
-# Global flag to toggle the display of Morse code
+sample_rate = 44100
+dot_duration = 0.1
+current_wpm = 7
 show_morse = True
-
 voice_enabled = False
-show_morse = True
 
+# === Morse Code Dictionary ===
 morse_code = {
     'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.', 'F': '..-.', 'G': '--.', 'H': '....',
     'I': '..', 'J': '.---', 'K': '-.-', 'L': '.-..', 'M': '--', 'N': '-.', 'O': '---', 'P': '.--.',
@@ -37,52 +63,55 @@ week_letters = {
     6: '. , ? /'
 }
 
+# === Text-to-Speech (TTS) Function ===
 def speak_text(engine, text):
-    try:
-        engine.say(text.lower())
-        engine.runAndWait()
-        engine.stop()
-    except Exception as e:
-        print(f"Error speaking text: {e}")
-    finally:
-        try:
-            engine.stop()
-        except:
-            pass
+    system = platform.system()
+    #print(f"[DEBUG] Speaking ({system}): {text}")
+    
+    if system == "Darwin":  # macOS
+        os.system(f"say '{text.lower()}'")  # Fix: use lowercase to avoid "capital" being spoken
+    elif system == "Linux":
+        if shutil.which("espeak"):
+            subprocess.run(["espeak", text])
+    elif system == "Windows":
+        if engine:
+            try:
+                engine.say(text)
+                engine.runAndWait()
+                engine.stop()
+            except Exception as e:
+                print(f"[DEBUG] pyttsx3 failed: {e}")
 
-# Function to generate tone for given frequency and duration
+# === Tone Generation ===
 def generate_tone(frequency, duration, sample_rate=44100):
     num_samples = int(duration * sample_rate)
     t = np.linspace(0, duration, num_samples, endpoint=False)
-    tone = np.sin(2 * np.pi * frequency * t) * 32767
-    tone = tone.astype(np.int16)
-    stereo_tone = np.stack((tone, tone), axis=-1)
+    tone = (np.sin(2 * np.pi * frequency * t) * 32767).astype(np.int16)
+    stereo_tone = np.stack((tone, tone), axis=-1)  # Stereo
     return stereo_tone
 
-# Function to play the morse sound (dot or dash)
+# === Play Dot or Dash ===
 def play_morse_sound(symbol, frequency):
-    if symbol == '.':
-        duration = dot_duration
-    elif symbol == '-':
-        duration = dot_duration * 3  
-    else:
-        return  
-
+    duration = dot_duration if symbol == '.' else dot_duration * 3
     sound_array = generate_tone(frequency, duration)
     sound = pygame.sndarray.make_sound(sound_array)
     sound.play()
-    pygame.time.delay(int(duration * 1000)) 
+    pygame.time.delay(int(duration * 1000))  # Wait for sound to finish
 
-# Function to print text in yellow
+# === Utility Functions ===
 def print_yellow(text):
-    YELLOW = '\033[33m'  
-    RESET = '\033[0m'  
-    print(f"{YELLOW}{text}{RESET}")
+    print(f"\033[33m{text}\033[0m")
 
-# Function to practice random letters from a specific week
+def print_blue(text):
+    print(f"\033[34m{text}\033[0m")
+
+# === Practice Functions ===
 def practice_week_letters_continuously(week_num):
     letters = week_letters[week_num]
-    engine = pyttsx3.init()
+    try:
+        engine = pyttsx3.init()
+    except Exception:
+        engine = None
     while True:
         letter = random.choice(letters)
         if letter == ' ':
@@ -93,16 +122,17 @@ def practice_week_letters_continuously(week_num):
             print_yellow(f"Sending: {letter}")
         for symbol in morse_code[letter]:
             play_morse_sound(symbol, current_frequency)
-            pygame.time.delay(int(dot_duration * 1000))  
-        pygame.time.delay(int(dot_duration * 3 * 1000))  
-
+            pygame.time.delay(int(dot_duration * 1000))
+        pygame.time.delay(int(dot_duration * 3 * 1000))
         if voice_enabled:
-            speak_text(engine,letter)
-    engine.stop()
+            time.sleep(0.2)
+            speak_text(engine, letter)
 
-# Function to practice all characters continuously
 def practice_all_characters_continuously():
-    engine = pyttsx3.init()
+    try:
+        engine = pyttsx3.init()
+    except Exception:
+        engine = None
     while True:
         letter = random.choice(list(morse_code.keys()))
         if show_morse:
@@ -112,18 +142,20 @@ def practice_all_characters_continuously():
         for symbol in morse_code[letter]:
             play_morse_sound(symbol, current_frequency)
             pygame.time.delay(int(dot_duration * 1000))
-        pygame.time.delay(int(dot_duration * 3 * 1000))  
-
+        pygame.time.delay(int(dot_duration * 3 * 1000))
         if voice_enabled:
-            speak_text(engine,letter)
-    engine.stop()
+            time.sleep(0.2)
+            speak_text(engine, letter)
 
-# Function to play user text in morse
 def play_user_text_in_morse(user_text):
+    try:
+        engine = pyttsx3.init()
+    except Exception:
+        engine = None
     for char in user_text.upper():
         if char == ' ':
             print("Space (between words)")
-            pygame.time.delay(int(dot_duration * 7 * 1000))  
+            pygame.time.delay(int(dot_duration * 7 * 1000))
         elif char in morse_code:
             if show_morse:
                 print_yellow(f"Sending: {char} ({morse_code[char]})")
@@ -131,68 +163,52 @@ def play_user_text_in_morse(user_text):
                 print_yellow(f"Sending: {char}")
             for symbol in morse_code[char]:
                 play_morse_sound(symbol, current_frequency)
-                pygame.time.delay(int(dot_duration * 1000))  
-            pygame.time.delay(int(dot_duration * 3 * 1000))  
+                pygame.time.delay(int(dot_duration * 1000))
+            pygame.time.delay(int(dot_duration * 3 * 1000))
+            if voice_enabled:
+                time.sleep(0.2)
+                speak_text(engine, char)
         else:
             print(f"Skipping unsupported character: {char}")
 
-# Function to print the menu in blue
-def print_blue(text):
-    BLUE = '\033[34m'  
-    RESET = '\033[0m'  
-    print(f"{BLUE}{text}{RESET}")
-
-# Function to adjust the tone frequency
+# === Settings Adjustment ===
 def adjust_frequency():
     global current_frequency
     try:
-        # Get the desired frequency from the user
-        new_frequency = int(input("Enter the new frequency (400-1000 Hz): "))
+        new_frequency = int(input("Enter new frequency (400-1000 Hz): "))
         if 400 <= new_frequency <= 1000:
             current_frequency = new_frequency
-            print(f"Frequency adjusted to {current_frequency} Hz.")
+            print(f"Frequency set to {current_frequency} Hz.")
         else:
-            print("Invalid frequency. Please enter a value between 400 and 1000 Hz.")
+            print("Invalid frequency.")
     except ValueError:
-        print("Invalid input. Please enter an integer value between 400 and 1000 Hz.")
+        print("Invalid input.")
 
-# Main menu function
+# === Main Menu ===
 def show_menu():
-    global transmitting_event, current_wpm, dot_duration, current_frequency, show_morse, voice_enabled
+    global current_wpm, dot_duration, current_frequency, show_morse, voice_enabled
     while True:
-        print(f"\nCurrent Frequency: {current_frequency} Hz | Current WPM: {current_wpm}")
-        print_blue("\nThis is a Morse Code program by Glenn Maclean WA7SPY.\n")
-        print_blue("The methodology for learning the order of characters was\n")
-        print_blue("developed by Michael Aretsky N6MQL. Michael died from Covid complications.\n")
-        print_blue("He is severely missed by the Ham Radio Morse Code community!\n")
-        print_blue("If you spend at least 15 minutes per day with the program in 5 to 6 weeks.\n")
-        print_blue("You will have learned Morse Code! Start learning each week's letters in order.\n")
-        print_blue("Do not move to the next week letters until you know the previous week's\n")
-        print_blue("letters by heart!\n")
-        print_blue("Morse Code is an audible language! Turn the dot dash display off as\n")
-        print_blue("soon as possible! Once you have learned all the letters (weeks), start\n")
-        print_blue("increasing the wpm speed! I highly recommend you get a straigth key and\n")
-        print_blue("tone oscillator. Look on ebay or Amazon. Start practice sending characters and replicate the\n")
-        print_blue("characters as you have heard them from this program\n")
-        print_blue("There will be a time when you get a mental block with the characters. Keep\n")
-        print_blue('practicing and work through the mental block and the characters will come to you!\n')
-        print_blue("Good luck and Have Fun!")
-        print_blue("\nWelcome to the Morse Code Training and Practice Program!\n")
-        print_blue("Press Ctrl + C to terminate the sending of letters and quit the program\n")
-        print_blue("1. Start continuous random letters from Week 1 (ETIANM)")
-        print_blue("2. Start continuous random letters from Week 2 (SURWDK)")
-        print_blue("3. Start continuous random letters from Week 3 (GOHVFL)")
-        print_blue("4. Start continuous random letters from Week 4 (PJBXC)")
-        print_blue("5. Start continuous random letters from Week 5 (YZQ1234567890)")
-        print_blue("6. Start continuous random letters from Week 6 (. , ? /)")
-        print_blue("7. Start continuous random letters from All Characters (A-Z, 0-9, . , ? /)")
-        print_blue("8. Enter custom text to be played in Morse code")  
-        print_blue("9. Adjust Tone Frequency 400hz to 1000hz")
-        print_blue("10. Set Words Per Minute (5 to 40 wpm)")
-        print_blue("11. Toggle Display of Morse Code (dots and dashes)")
+        print(f"\nFrequency: {current_frequency} Hz | WPM: {current_wpm}")
+        print_blue("Morse Code Trainer by Glenn Maclean WA7SPY")
+        print_blue("Learning method by Michael Aretsky N6MQL (RIP)")
+        print_blue("Practice 15 mins/day for 5-6 weeks to learn Morse!")
+        print_blue("Use a straight key and oscillator for best results.\n")
+
+        print_blue("1. Week 1: ETIANM")
+        print_blue("2. Week 2: SURWDK")
+        print_blue("3. Week 3: GOHVFL")
+        print_blue("4. Week 4: PJBXC")
+        print_blue("5. Week 5: YZQ1234567890")
+        print_blue("6. Week 6: . , ? /")
+        print_blue("7. All Characters")
+        print_blue("8. Enter custom text")
+        print_blue("9. Adjust Frequency")
+        print_blue("10. Set WPM (Words Per Minute)")
+        print_blue("11. Toggle Morse Display")
         print_blue("12. Toggle Voice")
         print_blue("13. Exit")
-        print(f"Dot Dash Display is {'ON' if show_morse else 'OFF'}")
+
+        print(f"Display: {'ON' if show_morse else 'OFF'} | Voice: {'ON' if voice_enabled else 'OFF'}")
         choice = input("Enter choice (1-13): ")
 
         if choice == '1':
@@ -210,43 +226,41 @@ def show_menu():
         elif choice == '7':
             practice_all_characters_continuously()
         elif choice == '8':
-            user_text = input("Enter your text to be played in Morse code: ")
-            play_user_text_in_morse(user_text)  
+            user_text = input("Enter text: ")
+            play_user_text_in_morse(user_text)
         elif choice == '9':
             adjust_frequency()
         elif choice == '10':
-            current_wpm = int(input("Enter the desired words per minute (WPM): "))
-            dot_duration = 60 / (current_wpm * 50)  
-            print(f"WPM set to: {current_wpm}")
+            try:
+                current_wpm = int(input("Enter WPM (5-40): "))
+                if 5 <= current_wpm <= 40:
+                    dot_duration = 60 / (current_wpm * 50)
+                    print(f"WPM set to {current_wpm}")
+                else:
+                    print("Invalid WPM value.")
+            except ValueError:
+                print("Invalid input.")
         elif choice == '11':
             show_morse = not show_morse
-            if show_morse:
-                print("Morse code display (dots and dashes) is now ON.")
-            else:
-                print("Morse code display (dots and dashes) is now OFF.")
+            print(f"Morse code display is now {'ON' if show_morse else 'OFF'}")
         elif choice == '12':
             voice_enabled = not voice_enabled
-            if voice_enabled:
-                print("Voice is now ON.")
-            else:
-                print("Voice is now OFF.")
+            print(f"Voice is now {'ON' if voice_enabled else 'OFF'}")
         elif choice == '13':
-            graceful_exit(None, None)  
+            graceful_exit(None, None)
         else:
-            print("Invalid choice. Please select a valid option.")
+            print("Invalid choice.")
 
-# Graceful exit function for handling Ctrl+C
-def graceful_exit(signal, frame):
-    print("\nProgram interrupted. Exiting...")
-    transmitting_event.clear()
-    if tts_engine is not None:
-        try:
-            tts_engine.stop()
-        except:
-            pass
+# === Exit Handler ===
+def graceful_exit(signal_received, frame):
+    print("\nExiting program. Goodbye!")
     pygame.quit()
     exit(0)
 
+# Handle Ctrl+C
 signal.signal(signal.SIGINT, graceful_exit)
 
-show_menu()
+# === Run Menu ===
+if __name__ == "__main__":
+    show_menu()
+
