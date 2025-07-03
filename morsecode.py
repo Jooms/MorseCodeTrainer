@@ -138,12 +138,19 @@ def practice_week_letters_continuously(week_num):
         engine = pyttsx3.init()
     except Exception:
         engine = None
+
+    i = 0
     while True:
         letter = random.choice(letters)
         if letter == ' ':
             continue
 
+        # After 5 letters, play a space.
+        if i >= 5:
+            play_letter(engine, ' ')
+            i = 0
         play_letter(engine, letter)
+        i += 1
 
 
 def practice_all_characters_continuously():
@@ -152,9 +159,16 @@ def practice_all_characters_continuously():
     except Exception:
         engine = None
 
+    i = 0
     while True:
         letter = random.choice(list(morse_code.keys()))
+
+        # After 5 letters, play a space.
+        if i >= 5:
+            play_letter(engine, ' ')
+            i = 0
         play_letter(engine, letter)
+        i += 1
 
 def play_user_text_in_morse(user_text):
     try:
