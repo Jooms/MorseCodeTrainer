@@ -26,7 +26,8 @@ import platform
 import shutil
 import subprocess
 import os
-import time
+
+from ascii_letters import ascii_letter
 
 # === Initialize Pygame Mixer ===
 pygame.init()
@@ -43,6 +44,7 @@ current_wpm = 10
 dot_duration = 60.0 / (current_wpm * 50.0)
 show_morse = True
 voice_enabled = False
+flash_card_mode_enabled = False
 
 # === Morse Code Dictionary ===
 morse_code = {
@@ -112,7 +114,10 @@ def play_letter(engine, letter):
         pygame.time.delay(int(dot_duration * 7 * 1000))
         return
 
-    if show_morse:
+    if flash_card_mode_enabled:
+        print("\n\n")
+        print_yellow(ascii_letter(letter))
+    elif show_morse:
         print_yellow(f"Sending: {letter} ({morse_code[letter]})")
     else:
         print_yellow(f"Sending: {letter}")
@@ -197,7 +202,7 @@ def adjust_frequency():
 
 # === Main Menu ===
 def show_menu():
-    global current_wpm, dot_duration, current_frequency, show_morse, voice_enabled
+    global current_wpm, dot_duration, current_frequency, show_morse, voice_enabled, flash_card_mode_enabled
     while True:
         print_blue("Morse Code Trainer by Glenn Maclean WA7SPY")
         print_blue("Learning method by Michael Aretsky N6MQL (RIP)")
@@ -216,10 +221,11 @@ def show_menu():
         print_blue("10. Set WPM (Words Per Minute)")
         print_blue("11. Toggle Morse Display")
         print_blue("12. Toggle Voice")
-        print_blue("13. Exit")
+        print_blue("13. Toggle Flash Card Mode")
+        print_blue("14. Exit")
 
-        print(f"Display: {'ON' if show_morse else 'OFF'} | Voice: {'ON' if voice_enabled else 'OFF'} | WPM: {current_wpm} | Frequency: {current_frequency}Hz")
-        choice = input("Enter choice (1-13): ")
+        print(f"Display: {'ON' if show_morse else 'OFF'} | Voice: {'ON' if voice_enabled else 'OFF'} | Flash Card: {'ON' if flash_card_mode_enabled else 'OFF'} | WPM: {current_wpm} | Frequency: {current_frequency}Hz")
+        choice = input("Enter choice (1-14): ")
 
         if choice == '1':
             practice_week_letters_continuously(1)
@@ -252,11 +258,16 @@ def show_menu():
                 print("Invalid input.")
         elif choice == '11':
             show_morse = not show_morse
+            flash_card_mode_enabled = False
             print(f"Morse code display is now {'ON' if show_morse else 'OFF'}")
         elif choice == '12':
             voice_enabled = not voice_enabled
             print(f"Voice is now {'ON' if voice_enabled else 'OFF'}")
         elif choice == '13':
+            flash_card_mode_enabled = not flash_card_mode_enabled
+            show_morse = False
+            print(f"Flash card mode is now {'ON' if flash_card_mode_enabled else 'OFF'}")
+        elif choice == '14':
             graceful_exit(None, None)
         else:
             print("Invalid choice.")
