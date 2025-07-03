@@ -63,6 +63,32 @@ week_letters = {
     6: '. , ? /'
 }
 
+fun_words = [
+    'RACECAR',
+    'DIMINISH',
+    'MATHEMATICS',
+    'MINUTE',
+    'RUTTER',
+    'CRUST',
+    'DOCK',
+    'KOOK',
+    'DUCK',
+    'LAND',
+    'LOUD',
+    'CLOCK',
+    'LLAMA',
+    'FLUFF',
+    'FLUKE',
+    'OSMOSIS',
+    'BANJO',
+    'DESCRIBED',
+    'ANGEL',
+    'PAGE',
+    'JETPACK',
+    'VOLCANO',
+
+]
+
 # === Text-to-Speech (TTS) Function ===
 def speak_text(engine, text):
     system = platform.system()
@@ -145,6 +171,20 @@ def practice_week_letters_continuously(week_num):
 
         play_letter(engine, letter)
 
+def practice_fun_words_continuously():
+    try:
+        engine = pyttsx3.init()
+    except Exception:
+        engine = None
+
+    repeat_word = 2
+    while True:
+        word = random.choice(fun_words)
+        for _ in range(repeat_word):
+            for letter in word:
+                play_letter(engine, letter)
+            play_letter(engine, ' ')
+            pygame.time.delay(int(dot_duration * 12 * 1000))
 
 def practice_all_characters_continuously():
     try:
@@ -202,10 +242,11 @@ def show_menu():
         print_blue("10. Set WPM (Words Per Minute)")
         print_blue("11. Toggle Morse Display")
         print_blue("12. Toggle Voice")
-        print_blue("13. Exit")
+        print_blue("13. Fun Words")
+        print_blue("14. Exit")
 
         print(f"Display: {'ON' if show_morse else 'OFF'} | Voice: {'ON' if voice_enabled else 'OFF'} | WPM: {current_wpm} | Frequency: {current_frequency}Hz")
-        choice = input("Enter choice (1-13): ")
+        choice = input("Enter choice (1-14): ")
 
         if choice == '1':
             practice_week_letters_continuously(1)
@@ -243,6 +284,8 @@ def show_menu():
             voice_enabled = not voice_enabled
             print(f"Voice is now {'ON' if voice_enabled else 'OFF'}")
         elif choice == '13':
+            practice_fun_words_continuously()
+        elif choice == '14':
             graceful_exit(None, None)
         else:
             print("Invalid choice.")
