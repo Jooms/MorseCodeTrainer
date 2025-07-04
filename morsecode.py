@@ -26,8 +26,56 @@ import platform
 import shutil
 import subprocess
 import os
+import json
 
 from ascii_letters import ascii_letter
+
+# === Settings Cache Functions ===
+SETTINGS_FILE = "morse_settings.json"
+
+def load_settings():
+    """Load settings from cache file, return default settings if file doesn't exist."""
+    default_settings = {
+        "current_frequency": 700,
+        "current_wpm": 10,
+        "show_morse": True,
+        "flash_card_mode_enabled": False,
+        "voice_enabled": False
+    }
+
+    try:
+        # If the settings file exists, load it.
+        if os.path.exists(SETTINGS_FILE):
+            with open(SETTINGS_FILE, 'r') as f:
+                settings = json.load(f)
+                # Merge defaults into loaded settings in case it has more settings than the default.
+                for key, value in default_settings.items():
+                    if key not in settings:
+                        settings[key] = value
+                return settings
+        else:
+            # If the settings file doesn't exist, create it with default settings.
+            with open(SETTINGS_FILE, 'w') as f:
+                json.dump(default_settings, f, indent=2)
+            return default_settings
+    except (json.JSONDecodeError, IOError) as e:
+        print(f"Warning: Could not load settings file ({e}). Using defaults.")
+        return default_settings
+
+def save_settings():
+    """Save current settings to cache file."""
+    settings = {
+        "current_frequency": current_frequency,
+        "current_wpm": current_wpm,
+        "show_morse": show_morse,
+        "voice_enabled": voice_enabled
+    }
+
+    try:
+        with open(SETTINGS_FILE, 'w') as f:
+            json.dump(settings, f, indent=2)
+    except IOError as e:
+        print(f"Warning: Could not save settings file ({e}).")
 
 # === Initialize Pygame Mixer ===
 pygame.init()
@@ -37,14 +85,17 @@ except pygame.error as e:
     print(f"[ERROR] Pygame mixer failed: {e}")
     exit(1)
 
+# === Load Settings from Cache ===
+settings = load_settings()
+current_frequency = settings["current_frequency"]
+current_wpm = settings["current_wpm"]
+show_morse = settings["show_morse"]
+voice_enabled = settings["voice_enabled"]
+flash_card_mode_enabled = settings["flash_card_mode_enabled"]
+
 # === Morse Settings ===
-current_frequency = 700
 sample_rate = 44100
-current_wpm = 10
 dot_duration = 60.0 / (current_wpm * 50.0)
-show_morse = True
-voice_enabled = False
-flash_card_mode_enabled = False
 
 # === Morse Code Dictionary ===
 morse_code = {
@@ -194,6 +245,7 @@ def adjust_frequency():
         new_frequency = int(input("Enter new frequency (400-1000 Hz): "))
         if 400 <= new_frequency <= 1000:
             current_frequency = new_frequency
+            save_settings()
             print(f"Frequency set to {current_frequency} Hz.")
         else:
             print("Invalid frequency.")
@@ -251,6 +303,7 @@ def show_menu():
                 current_wpm = int(input("Enter WPM (5-40): "))
                 if 5 <= current_wpm <= 40:
                     dot_duration = 60 / (current_wpm * 50)
+                    save_settings()
                     print(f"WPM set to {current_wpm}")
                 else:
                     print("Invalid WPM value.")
@@ -259,13 +312,16 @@ def show_menu():
         elif choice == '11':
             show_morse = not show_morse
             flash_card_mode_enabled = False
+            save_settings()
             print(f"Morse code display is now {'ON' if show_morse else 'OFF'}")
         elif choice == '12':
             voice_enabled = not voice_enabled
+            save_settings()
             print(f"Voice is now {'ON' if voice_enabled else 'OFF'}")
         elif choice == '13':
             flash_card_mode_enabled = not flash_card_mode_enabled
             show_morse = False
+            save_settings()
             print(f"Flash card mode is now {'ON' if flash_card_mode_enabled else 'OFF'}")
         elif choice == '14':
             graceful_exit(None, None)
