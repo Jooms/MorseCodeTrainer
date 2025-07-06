@@ -135,12 +135,28 @@ def play_user_text(text):
 
 def practice_week_letters_continuously(week_num):
     letters = week_letters[week_num] + additional_characters.get(week_num, "")
-    while True:
-        letter = random.choice(letters)
-        play_morse(letter)
+    print_blue("Press Ctrl+C to return to the main menu.")
 
-def play_random(lst):
-    play_user_text(random.choice(lst))
+    # Temporarily allow Ctrl+C to stop the loop
+    signal.signal(signal.SIGINT, signal.default_int_handler)
+
+    try:
+        while True:
+            letter = random.choice(letters)
+            play_morse(letter)
+    except KeyboardInterrupt:
+        print_blue("\nReturning to main menu...")
+
+    # Restore the safe handler after the loop
+    signal.signal(signal.SIGINT, handle_sigint)
+
+def play_random(lst, count=1):
+    if count > 1:
+        selection = random.sample(lst, count)
+        text = " ".join(selection)
+    else:
+        text = random.choice(lst)
+    play_user_text(text)
 
 def adjust_frequency():
     global current_frequency
@@ -223,15 +239,15 @@ def random_word_menu():
     if choice == '0':
         return
     elif choice == '1':
-        play_random(week1_words)
+        play_random(week1_words, count=3)
     elif choice == '2':
-        play_random(week12_words)
+        play_random(week12_words, count=3)
     elif choice == '3':
-        play_random(week123_words)
+        play_random(week123_words, count=3)
     elif choice == '4':
-        play_random(week1234_words)
+        play_random(week1234_words, count=3)
     elif choice == '5':
-        play_random(all_words)
+        play_random(all_words, count=3)
     else:
         print("Invalid choice.")
 
@@ -298,8 +314,10 @@ def show_main_menu():
         else:
             print("Invalid choice.")
 
-signal.signal(signal.SIGINT, lambda s, f: pygame.quit() or exit(0))
+def handle_sigint(signum, frame):
+    print_blue("\nUse option 9 in the menu to exit.")
+
+signal.signal(signal.SIGINT, handle_sigint)
 
 if __name__ == "__main__":
     show_main_menu()
-
