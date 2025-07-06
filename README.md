@@ -1,3 +1,4 @@
+
 # Morse Code Trainer
 
 Created by: WA7SPY
@@ -97,6 +98,21 @@ Follow the steps below for your platform.
 
 ---
 
+## Important Files
+
+Make sure the following files are located in the **same folder** before running the program:
+
+- `morsecode.py` – the main program.
+- `ascii_letters.py` – provides the large letter display for Flash Card Mode.
+
+If `ascii_letters.py` is missing or not in the same directory as `morsecode.py`, the program will not start and you will see an error similar to:
+
+```
+ModuleNotFoundError: No module named 'ascii_letters'
+```
+
+---
+
 ## Running the Program
 
 Navigate to the folder containing `morsecode.py`.
@@ -155,6 +171,15 @@ Sending: E (.)
 
 ---
 
+## Exiting the Program
+
+- **To stop sending and return to the main menu:**  
+  Press **Ctrl+C**
+- **To exit completely:**  
+  Select **menu option 9**
+
+---
+
 ## Acknowledgment
 
 This program’s method and sequence for learning Morse Code are inspired by the work of **Mike Aretsky, N6MQL**.
@@ -164,10 +189,3 @@ Mike was a beloved ham radio leader, Morse code advocate, accomplished engineer,
 This project is dedicated to his memory and to his commitment to sharing Morse Code with new generations.
 
 ---
-
-## Exiting the Program
-
-- **To stop sending and return to the main menu:**  
-  Press **Ctrl+C**
-- **To exit completely:**  
-  Select **menu option 9**
