@@ -155,12 +155,19 @@ Sending: E (.)
 
 ---
 
+## Acknowledgment
+
+This program’s method and sequence for learning Morse Code are inspired by the work of **Mike Aretsky, N6MQL**.
+
+Mike was a beloved ham radio leader, Morse code advocate, accomplished engineer, and community pillar. His passions spanned amateur radio, music, electronics, and service—leaving a vibrant legacy respected by many in the Sacramento Valley.
+
+This project is dedicated to his memory and to his commitment to sharing Morse Code with new generations.
+
+---
+
 ## Exiting the Program
 
 - **To stop sending and return to the main menu:**  
   Press **Ctrl+C**
 - **To exit completely:**  
   Select **menu option 9**
-
----
-
