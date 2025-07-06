@@ -2,61 +2,165 @@
 
 Created by: WA7SPY
 
+---
+
 ## About
 
-This program will teach you to learn morse code!
+This program helps you learn Morse code interactively!
 
-The program is laid out with menu selections for speed of wpm selection
-tone selection, and other features. The menu has weekly selections to
-learn given letters for that week, Make sure you spend at least 15
-minutes per day on each week's letters. Do not go onto the next week's
-letters until you have the week letters you are working on down pat.
-The menu is self explanatory. There is a menu to turn on or off the dot
-dash display of the letter being sent. Morse code is an audible language.
-The dot dash display should be off as soon as possible. Each week's
-letters that are selected will be sent at random. Once all the letters,
-numbers and puctuation are 100% memorized, there is a selction to send
-all letters, numbers, and punctuation at random. You can also make a
-selection to type letters numbers puctuation making up mixed characters,
-numbers and punctuation and they will be sent back in morse code.
+You can:
 
-**GOOD LUCK I HOPE YOU FIND THIS PROGRAM USEFUL! ENJOY!**
+- Practice letters in weekly groups
+- Send random words and sentences built from each week's letters
+- Send random call signs, numbers, and punctuation
+- Enter your own text to send in Morse code
+- Adjust tone frequency and speed (WPM)
+- Use Flash Card Mode to display large letters as they are sent
+- Toggle dot-dash display for reference
 
-## First Time Setup
+Morse code is an **audible language**—be sure to turn off the visual dot-dash display as soon as you can.
 
-Make sure you checkout and pull the `master` branch on git before following these steps.
+**Practice at least 15 minutes per day.**  
+Do not move to the next week’s letters until you can copy the current week’s letters confidently.
 
-*If there are any steps missing. Please update this README.*
+When you have memorized all letters, numbers, and punctuation, you can practice with mixed random selections.
 
-### Create Python Virtual Environment
+**GOOD LUCK—ENJOY LEARNING!**
 
-```sh
-# Create the venv if it doesn't already exist.
-python -m venv pyEnv
-# We recommend you use this venv name because it's already in the .gitignore.
-```
+---
 
-Then activate the virtual python environment:
+## Revision History
 
-```sh
-# There will be an activate script in the pyEnv/bin directory.
-source pyEnv/bin/activate
-```
+**v2.0 – July 5, 2025**
+- Refactored menu structure with submenus
+- Added Ctrl+C handling to stop sending and return to the main menu
+- Added random numbers and punctuation practice
+- Added week-specific random words and sentences
+- Improved settings handling
+- Added clean exit option (menu option 9)
 
-When you're done running this, you can close your terminal or deactivate the environment.
+---
 
-```sh
-deactivate
-```
+## Requirements
 
-### Install Dependencies
+- Python 3
+- [pygame](https://www.pygame.org/)
+- numpy
 
-```sh
-python -m pip install -r requirements.txt
-```
+---
 
-## Running
+## Installation
+
+Follow the steps below for your platform.
+
+---
+
+### Windows
+
+1. Install Python 3 from [python.org](https://www.python.org/).
+2. Open **Command Prompt**.
+3. Install dependencies:
+
+    ```sh
+    pip install pygame numpy
+    ```
+
+4. (Optional) Create a virtual environment:
+
+    ```sh
+    python -m venv pyEnv
+    pyEnv\Scripts\activate
+    ```
+
+---
+
+### macOS and Linux
+
+1. Make sure Python 3 is installed:
+
+    ```sh
+    python3 --version
+    ```
+
+2. Install dependencies:
+
+    ```sh
+    pip3 install pygame numpy
+    ```
+
+3. (Optional) Create a virtual environment:
+
+    ```sh
+    python3 -m venv pyEnv
+    source pyEnv/bin/activate
+    ```
+
+---
+
+## Running the Program
+
+Navigate to the folder containing `morsecode.py`.
+
+**Windows:**
 
 ```sh
 python morsecode.py
 ```
+
+**macOS and Linux:**
+
+```sh
+python3 morsecode.py
+```
+
+---
+
+## Example Screen Output
+
+```
+Morse Code Trainer - Main Menu
+1. Practice Week Letters
+2. Random Word
+3. Random Sentence
+4. Random Call Sign
+5. Random Numbers (0123456789)
+6. Random Punctuation (.,?/)
+7. Enter Custom Text
+8. Settings
+9. Exit
+Display: ON | Flash: OFF | WPM: 10 | Frequency: 700Hz
+Choice:
+```
+
+While sending, the program will display:
+
+```
+Sending: E (.)
+```
+
+---
+
+## Using the Program
+
+**Main Menu Options:**
+- **1. Practice Week Letters:** Sends letters from a specific week's group randomly.
+- **2. Random Word:** Sends 3 randomly selected words.
+- **3. Random Sentence:** Sends a randomly selected sentence.
+- **4. Random Call Sign:** Sends a randomly selected ham call sign.
+- **5. Random Numbers:** Sends numbers randomly.
+- **6. Random Punctuation:** Sends punctuation marks randomly.
+- **7. Enter Custom Text:** You type anything, and it will send it back in Morse code.
+- **8. Settings:** Adjust frequency, WPM, display options, and flash card mode.
+- **9. Exit:** Close the program.
+
+---
+
+## Exiting the Program
+
+- **To stop sending and return to the main menu:**  
+  Press **Ctrl+C**
+- **To exit completely:**  
+  Select **menu option 9**
+
+---
+
