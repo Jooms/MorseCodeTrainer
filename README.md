@@ -32,13 +32,11 @@ When you have memorized all letters, numbers, and punctuation, you can practice 
 
 ## Revision History
 
-**v2.0 – July 5, 2025**
-- Refactored menu structure with submenus
-- Added Ctrl+C handling to stop sending and return to the main menu
-- Added random numbers and punctuation practice
-- Added week-specific random words and sentences
-- Improved settings handling
-- Added clean exit option (menu option 9)
+**v2.1 – July 7, 2025**
+- Replaced Ctrl+C with Enter key to pause/resume sending
+- Added `q` + Enter to stop sending and return to the main menu
+- Retained menu option 9 for clean exit
+- Minor improvements to on-screen instructions
 
 ---
 
@@ -66,7 +64,7 @@ Follow the steps below for your platform.
     pip install pygame numpy
     ```
 
-4. (Optional) Create a virtual environment:
+4. *(Optional)* Create a virtual environment:
 
     ```sh
     python -m venv pyEnv
@@ -89,7 +87,7 @@ Follow the steps below for your platform.
     pip3 install pygame numpy
     ```
 
-3. (Optional) Create a virtual environment:
+3. *(Optional)* Create a virtual environment:
 
     ```sh
     python3 -m venv pyEnv
@@ -144,6 +142,7 @@ Morse Code Trainer - Main Menu
 7. Enter Custom Text
 8. Settings
 9. Exit
+Press [Enter] to Pause. Press [q] then [Enter] to Stop.
 Display: ON | Flash: OFF | WPM: 10 | Frequency: 700Hz
 Choice:
 ```
@@ -171,12 +170,14 @@ Sending: E (.)
 
 ---
 
-## Exiting the Program
+## Pausing and Stopping
 
-- **To stop sending and return to the main menu:**  
-  Press **Ctrl+C**
-- **To exit completely:**  
-  Select **menu option 9**
+- **Pause/Resume sending:**  
+  Press **Enter** during playback.
+- **Stop sending and return to the main menu:**  
+  Press **q** and then **Enter** during playback.
+- **Exit completely:**  
+  Use **menu option 9**.
 
 ---
 
