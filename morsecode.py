@@ -48,6 +48,7 @@ show_morse = settings["show_morse"]
 flash_card_mode_enabled = settings["flash_card_mode_enabled"]
 
 dot_duration = 60.0 / (current_wpm * 50.0)
+timeout_supported = True
 
 morse_code = {
     'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.', 'F': '..-.', 'G': '--.', 'H': '....',
@@ -108,10 +109,75 @@ def generate_tone(frequency, duration, sample_rate=44100):
 def print_blue(text):
     print(f"\033[97m{text}\033[0m")
 
+def prompt_for_pause(duration_seconds=3.0):
+    """Wait for specified duration, but allow Enter to pause"""
+    global timeout_supported
+    # If timeout is not supported, just wait for the duration.
+    if timeout_supported != True:
+        pygame.time.wait(int(duration_seconds * 1000))
+        return 'continue'
+
+    # If timeout is supported, wait for input with specified timeout.
+    try:
+        import select
+        import sys
+
+        # Wait for input with specified timeout
+        if select.select([sys.stdin], [], [], duration_seconds)[0]:
+            user_input = input().strip().lower()
+            if user_input == 'q':
+                return 'quit'
+            elif user_input == "":
+                print_blue("PAUSED - Press Enter to continue, or type 'q' to quit...")
+                user_input = input().strip().lower()
+                if user_input == 'q':
+                    return 'quit'
+                else:
+                    print_blue("RESUMED")
+                    return 'continue'
+        else:
+            # Timeout occurred, continue automatically
+            return 'continue'
+    except:
+        # Fallback for systems where select doesn't work
+        try:
+            import msvcrt  # Windows
+            import time
+
+            start_time = time.time()
+            while time.time() - start_time < duration_seconds:
+                if msvcrt.kbhit():
+                    key = msvcrt.getch()
+                    if key == b'\r':  # Enter key
+                        print_blue("PAUSED - Press Enter to continue, or type 'q' to quit...")
+                        user_input = input().strip().lower()
+                        if user_input == 'q':
+                            return 'quit'
+                        else:
+                            print_blue("RESUMED")
+                            return 'continue'
+                    elif key == b'q':
+                        return 'quit'
+                time.sleep(0.1)
+
+            # Timeout occurred, continue automatically
+            return 'continue'
+        except:
+            # If we try to use timeout and it fails, don't try again.
+            timeout_supported = False
+            print_blue("Press Enter to continue, or type 'q' to quit...")
+            user_input = input().strip().lower()
+            if user_input == 'q':
+                return 'quit'
+            return 'continue'
+
 def play_morse(letter):
     if letter == ' ':
-        pygame.time.wait(int(dot_duration * 7 * 1000))
-        return
+        result = prompt_for_pause(dot_duration * 7)
+        if result == 'quit':
+            return 'quit'
+        return 'continue'
+
     if flash_card_mode_enabled:
         print("\n\n")
         print_blue(ascii_letter(letter))
@@ -119,19 +185,37 @@ def play_morse(letter):
         print_blue(f"Sending: {letter} ({morse_code.get(letter, '?')})")
     else:
         print_blue(f"Sending: {letter}")
+    
     for symbol in morse_code.get(letter, ''):
         duration = dot_duration if symbol == '.' else dot_duration * 3
         tone = generate_tone(current_frequency, duration)
         sound = pygame.sndarray.make_sound(tone)
         sound.play()
-        pygame.time.wait(int(duration * 1000))
-        pygame.time.wait(int(dot_duration * 1000))
-    pygame.time.wait(int(dot_duration * 3 * 1000))
+        
+        # Wait for tone duration
+        result = prompt_for_pause(duration)
+        if result == 'quit':
+            return 'quit'
+        
+        # Wait for element spacing
+        result = prompt_for_pause(dot_duration)
+        if result == 'quit':
+            return 'quit'
+    
+    # Wait for letter spacing
+    result = prompt_for_pause(dot_duration * 3)
+    if result == 'quit':
+        return 'quit'
+    
+    return 'continue'
 
 def play_user_text(text):
     for char in text.upper():
         if char in morse_code or char == ' ':
-            play_morse(char)
+            result = play_morse(char)
+            if result == 'quit':
+                return 'quit'
+    return 'continue'
 
 def practice_week_letters_continuously(week_num):
     letters = week_letters[week_num] + additional_characters.get(week_num, "")
@@ -143,7 +227,9 @@ def practice_week_letters_continuously(week_num):
     try:
         while True:
             letter = random.choice(letters)
-            play_morse(letter)
+            result = play_morse(letter)
+            if result == 'quit':
+                break
     except KeyboardInterrupt:
         print_blue("\nReturning to main menu...")
 
@@ -156,7 +242,9 @@ def play_random(lst, count=1):
         text = " ".join(selection)
     else:
         text = random.choice(lst)
-    play_user_text(text)
+    result = play_user_text(text)
+    if result == 'quit':
+        print_blue("Returning to menu...")
 
 def adjust_frequency():
     global current_frequency
@@ -277,7 +365,9 @@ def random_sentence_menu():
 
 def show_main_menu():
     while True:
-        print_blue("\nMorse Code Trainer - Main Menu")
+        print_blue("\n --------------------------------")
+        print_blue("| Morse Code Trainer - Main Menu |")
+        print_blue(" --------------------------------")
         print_blue("1. Practice Week Letters")
         print_blue("2. Random Word")
         print_blue("3. Random Sentence")
@@ -287,7 +377,9 @@ def show_main_menu():
         print_blue("7. Enter Custom Text")
         print_blue("8. Settings")
         print_blue("9. Exit")
-        print(f"Display: {'ON' if show_morse else 'OFF'} | Flash: {'ON' if flash_card_mode_enabled else 'OFF'} | WPM: {current_wpm} | Frequency: {current_frequency}Hz")
+        if timeout_supported == True:
+            print(f"\nPress [Enter] to Pause. Press [q] then [Enter] to Stop.")
+        print(f"\nDisplay: {'ON' if show_morse else 'OFF'} | Flash: {'ON' if flash_card_mode_enabled else 'OFF'} | WPM: {current_wpm} | Frequency: {current_frequency}Hz")
         choice = input("Choice: ").lower()
 
         if choice == '1':
