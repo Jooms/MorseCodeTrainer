@@ -285,7 +285,7 @@ def play_letter(letter) -> str:
     return prompt_for_pause(int(dot_duration * 3))
 
 # === Morse Features ===
-def play_user_text(text) -> str:
+def play_text(text) -> str:
     for char in text.upper():
         if char in morse_code or char == ' ':
             result = play_letter(char)
@@ -294,33 +294,36 @@ def play_user_text(text) -> str:
     return 'continue'
 
 def practice_week_letters_continuously(week_num) -> str:
-    letters = week_letters[week_num] + additional_characters.get(week_num, "")
-    print_blue("Press Ctrl+C to return to the main menu.")
+    letters = week_letters[week_num]
 
-    # Temporarily allow Ctrl+C to stop the loop
-    signal.signal(signal.SIGINT, signal.default_int_handler)
+    i = 0
+    while True:
+        letter = random.choice(letters)
+        if letter == ' ':
+            continue
 
-    try:
-        while True:
-            letter = random.choice(letters)
-            result = play_letter(letter)
+        # After 5 letters, play a space.
+        if i >= 5:
+            result = play_letter(' ')
             if result == 'quit':
                 break
-    except KeyboardInterrupt:
-        print_blue("\nReturning to main menu...")
+            i = 0
 
-    # Restore the safe handler after the loop
-    signal.signal(signal.SIGINT, handle_sigint)
+        result = play_letter(letter)
+        if result == 'quit':
+            break
+        i += 1
 
-def play_random(lst, count=1) -> str:
+
+def play_random_text(text_list, count=1) -> str:
+    # Text is words or sentences.
     if count > 1:
-        selection = random.sample(lst, count)
+        selection = random.sample(text_list, count)
         text = " ".join(selection)
     else:
-        text = random.choice(lst)
-    result = play_user_text(text)
-    if result == 'quit':
-        print_blue("Returning to menu...")
+        text = random.choice(text_list)
+    # Either it completes or they quit. We handle both the same.
+    play_text(text)
 
 # === Setting modifications ===
 def adjust_frequency():
@@ -410,15 +413,15 @@ def random_word_menu():
     if choice == '0':
         return
     elif choice == '1':
-        play_random(week1_words, count=3)
+        play_random_text(week1_words, count=3)
     elif choice == '2':
-        play_random(week12_words, count=3)
+        play_random_text(week12_words, count=3)
     elif choice == '3':
-        play_random(week123_words, count=3)
+        play_random_text(week123_words, count=3)
     elif choice == '4':
-        play_random(week1234_words, count=3)
+        play_random_text(week1234_words, count=3)
     elif choice == '5':
-        play_random(all_words, count=3)
+        play_random_text(all_words, count=3)
     else:
         print("Invalid choice.")
 
@@ -434,15 +437,15 @@ def random_sentence_menu():
     if choice == '0':
         return
     elif choice == '1':
-        play_random(week1_sentences)
+        play_random_text(week1_sentences)
     elif choice == '2':
-        play_random(week12_sentences)
+        play_random_text(week12_sentences)
     elif choice == '3':
-        play_random(week123_sentences)
+        play_random_text(week123_sentences)
     elif choice == '4':
-        play_random(week1234_sentences)
+        play_random_text(week1234_sentences)
     elif choice == '5':
-        play_random(week7_sentences)
+        play_random_text(week7_sentences)
     else:
         print("Invalid choice.")
 
@@ -472,14 +475,14 @@ def show_main_menu():
         elif choice == '3':
             random_sentence_menu()
         elif choice == '4':
-            play_random(call_signs)
+            play_random_text(call_signs)
         elif choice == '5':
             practice_week_letters_continuously(8)
         elif choice == '6':
             practice_week_letters_continuously(9)
         elif choice == '7':
             text = input("Enter custom text: ")
-            play_user_text(text)
+            play_text(text)
         elif choice == '8':
             settings_menu()
         elif choice == '9':
