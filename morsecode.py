@@ -195,9 +195,6 @@ def prompt_for_pause(duration_seconds=3.0) -> str:
 def print_blue(text):
     print(f"\033[97m{text}\033[0m")
 
-def handle_sigint(signum, frame):
-    print_blue("\nUse option 9 in the menu to exit.")
-
 # === Morse Code Sounds ===
 def generate_tone(frequency, duration, sample_rate=44100):
     t = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
@@ -314,7 +311,6 @@ def practice_week_letters_continuously(week_num) -> str:
             break
         i += 1
 
-
 def play_random_text(text_list, count=1) -> str:
     # Text is words or sentences.
     if count > 1:
@@ -344,12 +340,12 @@ def settings_menu():
     global current_wpm, dot_duration, show_morse, flash_card_mode_enabled, voice_enabled
     while True:
         print_blue("\nSettings Menu")
+        print_blue("0. Return to Main Menu")
         print_blue("1. Adjust Frequency")
         print_blue("2. Set WPM")
         print_blue("3. Toggle Morse Display")
         print_blue("4. Toggle Flash Card Mode")
         print_blue("5. Toggle Voice Mode")
-        print_blue("6. Return to Main Menu")
         choice = input("Choice: ").lower()
 
         if choice == '1':
@@ -378,7 +374,7 @@ def settings_menu():
             voice_enabled = not voice_enabled
             save_settings()
             print(f"Voice Mode is now {'ON' if voice_enabled else 'OFF'}")
-        elif choice == '6':
+        elif choice == '0':
             break
         else:
             print("Invalid choice.")
@@ -454,6 +450,7 @@ def show_main_menu():
         print_blue("\n --------------------------------")
         print_blue("| Morse Code Trainer - Main Menu |")
         print_blue(" --------------------------------")
+        print_blue("0. Exit")
         print_blue("1. Practice Week Letters")
         print_blue("2. Random Word")
         print_blue("3. Random Sentence")
@@ -462,7 +459,6 @@ def show_main_menu():
         print_blue("6. Random Punctuation (" + week_letters[9] + ")")
         print_blue("7. Enter Custom Text")
         print_blue("8. Settings")
-        print_blue("9. Exit")
         if timeout_supported == True:
             print(f"\nPress [Enter] to Pause. Press [q] then [Enter] to Stop.")
         print(f"\nDisplay: {'ON' if show_morse else 'OFF'} | Flash: {'ON' if flash_card_mode_enabled else 'OFF'} | Voice: {'ON' if voice_enabled else 'OFF'} | WPM: {current_wpm} | Frequency: {current_frequency}Hz")
@@ -494,5 +490,4 @@ def show_main_menu():
 
 # === Main Program ===
 if __name__ == "__main__":
-    signal.signal(signal.SIGINT, handle_sigint)
     show_main_menu()
