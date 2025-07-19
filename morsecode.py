@@ -1,20 +1,43 @@
-import pygame
-import numpy as np
-import random
-import signal
-import os
 import json
+import os
+import platform
+import random
+import shutil
+import subprocess
+import signal
 
 from ascii_letters import ascii_letter
 
 SETTINGS_FILE = "morse_settings.json"
 
+# === 3rd Party Modules ===
+try:
+    import pygame
+except ImportError:
+    print("Error: Pygame is not installed. Run: pip install pygame")
+    exit(1)
+
+try:
+    import numpy as np
+except ImportError:
+    print("Error: NumPy is not installed. Run: pip install numpy")
+    exit(1)
+
+try:
+    import pyttsx3
+except ImportError:
+    print("Error: pyttsx3 is not installed. Run: pip install pyttsx3")
+    exit(1)
+
+
+# === Settings File Functions ===
 def load_settings():
     default_settings = {
         "current_frequency": 700,
         "current_wpm": 10,
         "show_morse": True,
-        "flash_card_mode_enabled": False
+        "flash_card_mode_enabled": False,
+        "voice_enabled": False
     }
     if os.path.exists(SETTINGS_FILE):
         with open(SETTINGS_FILE, 'r') as f:
@@ -33,23 +56,28 @@ def save_settings():
         "current_frequency": current_frequency,
         "current_wpm": current_wpm,
         "show_morse": show_morse,
-        "flash_card_mode_enabled": flash_card_mode_enabled
+        "flash_card_mode_enabled": flash_card_mode_enabled,
+        "voice_enabled": voice_enabled
     }
     with open(SETTINGS_FILE, 'w') as f:
         json.dump(settings, f, indent=2)
 
+# === Initialize Pygame ===
 pygame.init()
 pygame.mixer.init(frequency=44100, size=-16, channels=2)
 
+# === Load Settings ===
 settings = load_settings()
 current_frequency = settings["current_frequency"]
 current_wpm = settings["current_wpm"]
 show_morse = settings["show_morse"]
 flash_card_mode_enabled = settings["flash_card_mode_enabled"]
-
+voice_enabled = settings["voice_enabled"]
 dot_duration = 60.0 / (current_wpm * 50.0)
 timeout_supported = True
+engine = None
 
+# === Morse Code Letters, Words, Sentences, etc. ===
 morse_code = {
     'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.', 'F': '..-.', 'G': '--.', 'H': '....',
     'I': '..', 'J': '.---', 'K': '-.-', 'L': '.-..', 'M': '--', 'N': '-.', 'O': '---', 'P': '.--.',
@@ -101,15 +129,8 @@ all_words = week1_words + week12_words + week123_words + week1234_words
 
 call_signs = ["WA7SPY/QRP", "KB1FJZ", "N8FIT", "KA2UTL", "W4ZX", "N3BKQ", "WA5PRY/M", "N6OQN", "W8GSH"]
 
-def generate_tone(frequency, duration, sample_rate=44100):
-    t = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
-    waveform = (np.sin(2 * np.pi * frequency * t) * 32767).astype(np.int16)
-    return np.column_stack((waveform, waveform))
-
-def print_blue(text):
-    print(f"\033[97m{text}\033[0m")
-
-def prompt_for_pause(duration_seconds=3.0):
+# === Utility Functions ===
+def prompt_for_pause(duration_seconds=3.0) -> str:
     """Wait for specified duration, but allow Enter to pause"""
     global timeout_supported
     # If timeout is not supported, just wait for the duration.
@@ -171,21 +192,22 @@ def prompt_for_pause(duration_seconds=3.0):
                 return 'quit'
             return 'continue'
 
-def play_morse(letter):
+def print_blue(text):
+    print(f"\033[97m{text}\033[0m")
+
+# === Morse Code Sounds ===
+def generate_tone(frequency, duration, sample_rate=44100):
+    t = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
+    waveform = (np.sin(2 * np.pi * frequency * t) * 32767).astype(np.int16)
+    return np.column_stack((waveform, waveform))
+
+def play_morse(letter) -> str:
     if letter == ' ':
         result = prompt_for_pause(dot_duration * 7)
         if result == 'quit':
             return 'quit'
         return 'continue'
 
-    if flash_card_mode_enabled:
-        print("\n\n")
-        print_blue(ascii_letter(letter))
-    elif show_morse:
-        print_blue(f"Sending: {letter} ({morse_code.get(letter, '?')})")
-    else:
-        print_blue(f"Sending: {letter}")
-    
     for symbol in morse_code.get(letter, ''):
         duration = dot_duration if symbol == '.' else dot_duration * 3
         tone = generate_tone(current_frequency, duration)
@@ -209,43 +231,97 @@ def play_morse(letter):
     
     return 'continue'
 
-def play_user_text(text):
+# === Voice ===
+def speak_text(text) -> None:
+    system = platform.system()
+    
+    if system == "Darwin":  # macOS
+          # Use lowercase to avoid "capital" being spoken
+        os.system(f"say '{text.lower()}'")
+    elif system == "Linux":
+        if shutil.which("espeak"):
+            subprocess.run(["espeak", text])
+    elif system == "Windows":
+        global engine
+        if engine:
+            try:
+                engine.say(text)
+                engine.runAndWait()
+                engine.stop()
+            except Exception as e:
+                print(f"[DEBUG] pyttsx3 failed: {e}")
+
+# === Play Letter ===
+def play_letter(letter) -> str:
+    if letter == ' ':
+        print("Space (between words)")
+        return prompt_for_pause(dot_duration * 7)
+
+    if flash_card_mode_enabled:
+        print("\n\n")
+        print_blue(ascii_letter(letter))
+    elif show_morse:
+        print_blue(f"Sending: {letter} ({morse_code[letter]})")
+    else:
+        print_blue(f"Sending: {letter}")
+
+    # Play the morse code for the letter
+    result = play_morse(letter)
+    if result == 'quit':
+        return 'quit'
+
+    # Speak the letter
+    if voice_enabled:
+        # Wait so the user can write their guess.
+        result = prompt_for_pause(dot_duration * 6)
+        if result == 'quit':
+            return 'quit'
+        speak_text(letter)
+
+    # Space between letters
+    return prompt_for_pause(int(dot_duration * 3))
+
+# === Morse Features ===
+def play_text(text) -> str:
     for char in text.upper():
         if char in morse_code or char == ' ':
-            result = play_morse(char)
+            result = play_letter(char)
             if result == 'quit':
                 return 'quit'
     return 'continue'
 
-def practice_week_letters_continuously(week_num):
-    letters = week_letters[week_num] + additional_characters.get(week_num, "")
-    print_blue("Press Ctrl+C to return to the main menu.")
+def practice_week_letters_continuously(week_num) -> str:
+    letters = week_letters[week_num]
 
-    # Temporarily allow Ctrl+C to stop the loop
-    signal.signal(signal.SIGINT, signal.default_int_handler)
+    i = 0
+    while True:
+        letter = random.choice(letters)
+        if letter == ' ':
+            continue
 
-    try:
-        while True:
-            letter = random.choice(letters)
-            result = play_morse(letter)
+        # After 5 letters, play a space.
+        if i >= 5:
+            result = play_letter(' ')
             if result == 'quit':
                 break
-    except KeyboardInterrupt:
-        print_blue("\nReturning to main menu...")
+            i = 0
 
-    # Restore the safe handler after the loop
-    signal.signal(signal.SIGINT, handle_sigint)
+        result = play_letter(letter)
+        if result == 'quit':
+            break
+        i += 1
 
-def play_random(lst, count=1):
+def play_random_text(text_list, count=1) -> str:
+    # Text is words or sentences.
     if count > 1:
-        selection = random.sample(lst, count)
+        selection = random.sample(text_list, count)
         text = " ".join(selection)
     else:
-        text = random.choice(lst)
-    result = play_user_text(text)
-    if result == 'quit':
-        print_blue("Returning to menu...")
+        text = random.choice(text_list)
+    # Either it completes or they quit. We handle both the same.
+    play_text(text)
 
+# === Setting modifications ===
 def adjust_frequency():
     global current_frequency
     try:
@@ -259,15 +335,17 @@ def adjust_frequency():
     except ValueError:
         print("Invalid input.")
 
+# === Menus ===
 def settings_menu():
-    global current_wpm, dot_duration, show_morse, flash_card_mode_enabled
+    global current_wpm, dot_duration, show_morse, flash_card_mode_enabled, voice_enabled
     while True:
         print_blue("\nSettings Menu")
+        print_blue("0. Return to Main Menu")
         print_blue("1. Adjust Frequency")
         print_blue("2. Set WPM")
         print_blue("3. Toggle Morse Display")
         print_blue("4. Toggle Flash Card Mode")
-        print_blue("5. Return to Main Menu")
+        print_blue("5. Toggle Voice Mode")
         choice = input("Choice: ").lower()
 
         if choice == '1':
@@ -293,6 +371,10 @@ def settings_menu():
             save_settings()
             print(f"Flash Card Mode is now {'ON' if flash_card_mode_enabled else 'OFF'}")
         elif choice == '5':
+            voice_enabled = not voice_enabled
+            save_settings()
+            print(f"Voice Mode is now {'ON' if voice_enabled else 'OFF'}")
+        elif choice == '0':
             break
         else:
             print("Invalid choice.")
@@ -327,15 +409,15 @@ def random_word_menu():
     if choice == '0':
         return
     elif choice == '1':
-        play_random(week1_words, count=3)
+        play_random_text(week1_words, count=3)
     elif choice == '2':
-        play_random(week12_words, count=3)
+        play_random_text(week12_words, count=3)
     elif choice == '3':
-        play_random(week123_words, count=3)
+        play_random_text(week123_words, count=3)
     elif choice == '4':
-        play_random(week1234_words, count=3)
+        play_random_text(week1234_words, count=3)
     elif choice == '5':
-        play_random(all_words, count=3)
+        play_random_text(all_words, count=3)
     else:
         print("Invalid choice.")
 
@@ -351,15 +433,15 @@ def random_sentence_menu():
     if choice == '0':
         return
     elif choice == '1':
-        play_random(week1_sentences)
+        play_random_text(week1_sentences)
     elif choice == '2':
-        play_random(week12_sentences)
+        play_random_text(week12_sentences)
     elif choice == '3':
-        play_random(week123_sentences)
+        play_random_text(week123_sentences)
     elif choice == '4':
-        play_random(week1234_sentences)
+        play_random_text(week1234_sentences)
     elif choice == '5':
-        play_random(week7_sentences)
+        play_random_text(week7_sentences)
     else:
         print("Invalid choice.")
 
@@ -368,6 +450,7 @@ def show_main_menu():
         print_blue("\n --------------------------------")
         print_blue("| Morse Code Trainer - Main Menu |")
         print_blue(" --------------------------------")
+        print_blue("0. Exit")
         print_blue("1. Practice Week Letters")
         print_blue("2. Random Word")
         print_blue("3. Random Sentence")
@@ -376,10 +459,9 @@ def show_main_menu():
         print_blue("6. Random Punctuation (" + week_letters[9] + ")")
         print_blue("7. Enter Custom Text")
         print_blue("8. Settings")
-        print_blue("9. Exit")
         if timeout_supported == True:
             print(f"\nPress [Enter] to Pause. Press [q] then [Enter] to Stop.")
-        print(f"\nDisplay: {'ON' if show_morse else 'OFF'} | Flash: {'ON' if flash_card_mode_enabled else 'OFF'} | WPM: {current_wpm} | Frequency: {current_frequency}Hz")
+        print(f"\nDisplay: {'ON' if show_morse else 'OFF'} | Flash: {'ON' if flash_card_mode_enabled else 'OFF'} | Voice: {'ON' if voice_enabled else 'OFF'} | WPM: {current_wpm} | Frequency: {current_frequency}Hz")
         choice = input("Choice: ").lower()
 
         if choice == '1':
@@ -389,14 +471,14 @@ def show_main_menu():
         elif choice == '3':
             random_sentence_menu()
         elif choice == '4':
-            play_random(call_signs)
+            play_random_text(call_signs)
         elif choice == '5':
             practice_week_letters_continuously(8)
         elif choice == '6':
             practice_week_letters_continuously(9)
         elif choice == '7':
             text = input("Enter custom text: ")
-            play_user_text(text)
+            play_text(text)
         elif choice == '8':
             settings_menu()
         elif choice == '9':
@@ -406,10 +488,6 @@ def show_main_menu():
         else:
             print("Invalid choice.")
 
-def handle_sigint(signum, frame):
-    print_blue("\nUse option 9 in the menu to exit.")
-
-signal.signal(signal.SIGINT, handle_sigint)
-
+# === Main Program ===
 if __name__ == "__main__":
     show_main_menu()
